@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUMS-CKD CDSS</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Prop Types (Critical dependency for Recharts UMD) -->
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+
+    <!-- Recharts (Pinned version for stability) -->
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        /* Custom Scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Safety check to ensure Recharts loaded correctly
+        const RechartsLib = window.Recharts || {
+            LineChart: () => null, Line: () => null, XAxis: () => null, YAxis: () => null, 
+            CartesianGrid: () => null, Tooltip: () => null, Legend: () => null, 
+            ResponsiveContainer: ({children}) => <div>{children}</div>, AreaChart: () => null, Area: () => null, ReferenceLine: () => null, ComposedChart: () => null
+        };
+
+        const { 
+            LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
+            Legend, ResponsiveContainer, AreaChart, Area, ReferenceLine, ComposedChart
+        } = RechartsLib;
+
+        // --- Gemini API Configuration ---
+        const apiKey = ""; // API key injected at runtime. In a real file, you would put your key here.
+
+        // --- Icons (SVG Components replacement for Lucide) ---
+        const Icons = {
+            Activity: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            User: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            FileText: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>,
+            Settings: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+            TrendingDown: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>,
+            TrendingUp: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+            AlertTriangle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+            CheckCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            Beaker: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><line x1="6" y1="14" x2="18" y2="14"/></svg>,
+            Brain: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
+            Sparkles: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
+            MessageCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>,
+            X: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        };
+
+        // --- Mock Data ---
+        const patientHistory = [
+            { month: '2025-08', ua: 8.8, egfr: 32 },
+            { month: '2025-09', ua: 8.5, egfr: 31 },
+            { month: '2025-10', ua: 8.9, egfr: 30 },
+            { month: '2025-11', ua: 9.1, egfr: 29 },
+            { month: '2025-12', ua: 8.7, egfr: 29 },
+        ];
+
+        const predictionData = {
+            Allopurinol: [
+                { week: 'W0', ua: 8.7, egfr: 29, target: 6.0 },
+                { week: 'W2', ua: 7.8, egfr: 29, target: 6.0 },
+                { week: 'W4', ua: 7.2, egfr: 28, target: 6.0 },
+                { week: 'W8', ua: 6.8, egfr: 29, target: 6.0 },
+                { week: 'W12', ua: 6.5, egfr: 29, target: 6.0 }, 
+            ],
+            Febuxostat: [
+                { week: 'W0', ua: 8.7, egfr: 29, target: 6.0 },
+                { week: 'W2', ua: 6.5, egfr: 30, target: 6.0 },
+                { week: 'W4', ua: 5.8, egfr: 31, target: 6.0 },
+                { week: 'W8', ua: 5.5, egfr: 32, target: 6.0 },
+                { week: 'W12', ua: 5.2, egfr: 32, target: 6.0 }, 
+            ],
+            Benzbromarone: [
+                { week: 'W0', ua: 8.7, egfr: 29, target: 6.0 },
+                { week: 'W2', ua: 7.0, egfr: 28, target: 6.0 },
+                { week: 'W4', ua: 6.2, egfr: 27, target: 6.0 },
+                { week: 'W8', ua: 5.9, egfr: 26, target: 6.0 },
+                { week: 'W12', ua: 5.8, egfr: 25, target: 6.0 }, 
+            ]
+        };
+
+        const drugAnalysis = [
+            { 
+                name: 'Allopurinol (100mg)', 
+                score: 65, 
+                risk: 'Medium', 
+                riskReason: '需檢測 HLA-B*5801', 
+                efficacy: 'Moderate',
+                eGFRImpact: 'Neutral',
+                color: '#94a3b8'
+            },
+            { 
+                name: 'Febuxostat (40mg)', 
+                score: 92, 
+                risk: 'Low', 
+                riskReason: '適合中重度 CKD', 
+                efficacy: 'High',
+                eGFRImpact: 'Positive',
+                color: '#10b981' // Green
+            },
+            { 
+                name: 'Benzbromarone (50mg)', 
+                score: 45, 
+                risk: 'High', 
+                riskReason: 'eGFR < 30 不建議', 
+                efficacy: 'High',
+                eGFRImpact: 'Negative',
+                color: '#ef4444' // Red
+            }
+        ];
+
+        // --- Helper Components ---
+        const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
+                active 
+                    ? 'text-white bg-slate-800 border-r-2 border-blue-500' 
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
+                }`}
+            >
+                <Icon className={`h-5 w-5 ${active ? 'text-blue-400' : ''}`} />
+                <span className="hidden md:block">{label}</span>
+            </button>
+        );
+
+        const MetricBadge = ({ label, value, sub, color, bg, trend }) => (
+            <div className={`px-4 py-2 rounded-lg border border-slate-100 flex flex-col items-center justify-center min-w-[100px] ${bg}`}>
+                <span className="text-xs text-slate-500 font-medium mb-0.5">{label}</span>
+                <div className={`text-xl font-bold ${color} flex items-center gap-1`}>
+                {value}
+                {trend === 'down' && <Icons.TrendingDown className="h-3 w-3" />}
+                {trend === 'up' && <Icons.TrendingUp className="h-3 w-3" />}
+                </div>
+                <span className="text-[10px] text-slate-400">{sub}</span>
+            </div>
+        );
+
+        // --- Main App Component ---
+        const App = () => {
+            const [selectedDrug, setSelectedDrug] = useState('Febuxostat');
+            const [activeTab, setActiveTab] = useState('dashboard');
+            
+            // AI State
+            const [insightLoading, setInsightLoading] = useState(false);
+            const [insightText, setInsightText] = useState("Patient exhibits persistent Hyperuricemia despite diet control. eGFR decline correlates with UA spikes.");
+            const [isInsightGenerated, setIsInsightGenerated] = useState(false);
+
+            const [explainLoading, setExplainLoading] = useState(false);
+            const [explainModalOpen, setExplainModalOpen] = useState(false);
+            const [explainText, setExplainText] = useState("");
+
+            // --- AI Functions ---
+            const generateClinicalInsight = async () => {
+                setInsightLoading(true);
+                try {
+                const prompt = `
+                    Act as a senior Nephrologist using the SUMS-CKD system.
+                    Analyze the following patient data for a 67-year-old male with CKD Stage G4:
+                    
+                    Recent History (Last 5 months):
+                    ${JSON.stringify(patientHistory)}
+                    
+                    Comorbidities: Type 2 Diabetes (HbA1c 7.2%), Hypertension (Controlled), BMI 28.4.
+                    
+                    Task: Write a concise, professional clinical note (max 3 sentences) summarizing the relationship between their Uric Acid levels and eGFR decline, and suggesting a management strategy. Use medical terminology.
+                `;
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                    }
+                );
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    setInsightText(text);
+                    setIsInsightGenerated(true);
+                }
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    setInsightText("AI Service unavailable. Please check connection.");
+                } finally {
+                    setInsightLoading(false);
+                }
+            };
+
+            const generatePatientExplanation = async () => {
+                setExplainLoading(true);
+                setExplainModalOpen(true);
+                setExplainText(""); // Clear previous text
+                
+                try {
+                const drugInfo = drugAnalysis.find(d => d.name.startsWith(selectedDrug));
+                
+                const prompt = `
+                    Act as an empathetic doctor in Taiwan (speaking Traditional Chinese).
+                    You are explaining to a 67-year-old male patient (Mr. Lin) why you are recommending ${drugInfo.name} for his high uric acid.
+                    
+                    Key points to cover:
+                    1. His current condition (High Uric Acid, CKD Stage 4).
+                    2. Why ${selectedDrug} is the best choice (Reason: ${drugInfo.riskReason}).
+                    3. Reassure him about safety.
+                    
+                    Tone: Warm, encouraging, simple to understand (no jargon).
+                    Format: A short conversational script (max 100 words).
+                `;
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                    {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+                    }
+                );
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    setExplainText(text);
+                }
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    setExplainText("暫時無法生成建議，請稍後再試。");
+                } finally {
+                    setExplainLoading(false);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-800 font-sans relative">
+                {/* Top Navigation Bar */}
+                <header className="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-3 flex justify-between items-center shadow-sm">
+                    <div className="flex items-center gap-4">
+                    <div className="bg-blue-600 p-2 rounded-lg">
+                        <Icons.Brain className="text-white h-6 w-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">SUMS-CKD <span className="text-blue-600">CDSS</span></h1>
+                        <p className="text-xs text-slate-500 font-medium">Smart Uric Acid Management System for CKD Care</p>
+                    </div>
+                    <div className="hidden md:flex ml-6 gap-2">
+                        <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded border border-slate-200">CMUH</span>
+                        <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded border border-slate-200">AUH</span>
+                        <span className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-100 font-semibold">HIS Integrated Mode</span>
+                    </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                    <div className="text-right mr-2 hidden sm:block">
+                        <p className="text-sm font-bold">Dr. Kuo</p>
+                        <p className="text-xs text-slate-500">Department of Nephrology</p>
+                    </div>
+                    <div className="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                        <Icons.User className="text-slate-500 h-6 w-6" />
+                    </div>
+                    </div>
+                </header>
+
+                <div className="flex">
+                    {/* Sidebar */}
+                    <aside className="w-16 md:w-64 bg-slate-900 min-h-[calc(100vh-64px)] flex flex-col text-slate-300">
+                    <nav className="flex-1 py-6 space-y-2">
+                        <SidebarItem icon={Icons.Activity} label="Overview Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                        <SidebarItem icon={Icons.TrendingUp} label="Cohort Analysis" active={activeTab === 'cohort'} onClick={() => setActiveTab('cohort')} />
+                        <SidebarItem icon={Icons.FileText} label="Clinical Trial (2026)" active={activeTab === 'trial'} onClick={() => setActiveTab('trial')} />
+                        <SidebarItem icon={Icons.Settings} label="System Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                    </nav>
+                    <div className="p-4 border-t border-slate-800">
+                        <div className="bg-slate-800 rounded p-3 text-xs">
+                        <p className="text-slate-400 mb-1">System Status</p>
+                        <div className="flex items-center gap-2 text-green-400">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            Online
+                        </div>
+                        </div>
+                    </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="flex-1 p-4 md:p-6 overflow-y-auto h-[calc(100vh-64px)]">
+                    
+                    {/* Patient Header Card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-xl">
+                            WX
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            Wang, Xiao-Ming (王小明) 
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full border border-red-200">High Risk</span>
+                            </h2>
+                            <p className="text-sm text-slate-500">Male, 67y | ID: A123***890 | Case No: 2025-CKD-8821</p>
+                        </div>
+                        </div>
+                        <div className="flex gap-4 w-full md:w-auto">
+                        <MetricBadge label="CKD Stage" value="G4" sub="Severe" color="text-orange-600" bg="bg-orange-50" />
+                        <MetricBadge label="eGFR" value="29" sub="mL/min" color="text-red-600" bg="bg-red-50" trend="down" />
+                        <MetricBadge label="Current UA" value="8.7" sub="mg/dL" color="text-red-600" bg="bg-red-50" trend="up" />
+                        </div>
+                    </div>
+
+                    {/* Core Dashboard Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        
+                        {/* Left Column: Historical Data & Context (4 cols) */}
+                        <div className="lg:col-span-4 space-y-6">
+                        
+                        {/* Historical Trends */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col">
+                            <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                <Icons.TrendingDown className="h-5 w-5 text-blue-600" />
+                                Historical Trends
+                            </h3>
+                            <span className="text-xs text-slate-400">Last 6 Months</span>
+                            </div>
+                            <div className="h-48 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ComposedChart data={patientHistory}>
+                                <defs>
+                                    <linearGradient id="colorUa" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="month" tick={{fontSize: 10}} stroke="#94a3b8" />
+                                <YAxis yAxisId="left" stroke="#ef4444" tick={{fontSize: 10}} domain={[6, 12]} label={{ value: 'UA', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                                <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" tick={{fontSize: 10}} domain={[20, 50]} label={{ value: 'eGFR', angle: 90, position: 'insideRight', fontSize: 10 }} />
+                                <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                                <ReferenceLine yAxisId="right" y={30} stroke="#3b82f6" strokeDasharray="3 3" label={{ value: 'G4 Threshold', position: 'insideBottomRight', fill: '#3b82f6', fontSize: 10 }} />
+                                <Area yAxisId="left" type="monotone" dataKey="ua" stroke="#ef4444" fillOpacity={1} fill="url(#colorUa)" strokeWidth={2} name="UA (mg/dL)" />
+                                <Line yAxisId="right" type="monotone" dataKey="egfr" stroke="#3b82f6" strokeWidth={2} dot={{r: 3}} name="eGFR" />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                            </div>
+                            
+                            {/* AI Insight Box */}
+                            <div className={`mt-3 p-3 rounded-lg border flex flex-col gap-2 transition-colors ${isInsightGenerated ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-100'}`}>
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-start gap-2">
+                                {isInsightGenerated ? (
+                                    <Icons.Sparkles className="h-4 w-4 text-indigo-600 mt-0.5" />
+                                ) : (
+                                    <Icons.AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                                )}
+                                <p className={`text-xs leading-relaxed ${isInsightGenerated ? 'text-indigo-900 font-medium' : 'text-amber-800'}`}>
+                                    {insightLoading ? 'Analyzing patient data with Gemini...' : insightText}
+                                </p>
+                                </div>
+                            </div>
+                            
+                            {!isInsightGenerated && !insightLoading && (
+                                <button 
+                                onClick={generateClinicalInsight}
+                                className="self-end text-[10px] bg-white border border-amber-200 text-amber-700 px-2 py-1 rounded hover:bg-amber-100 flex items-center gap-1"
+                                >
+                                <Icons.Sparkles size={10} />
+                                AI Insight
+                                </button>
+                            )}
+                            </div>
+                        </div>
+
+                        {/* Comorbidities */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <Icons.Activity className="h-5 w-5 text-blue-600" />
+                            Clinical Context
+                            </h3>
+                            <div className="space-y-3">
+                            <div className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
+                                <span className="text-slate-500">Diabetes Mellitus</span>
+                                <span className="font-medium text-slate-800">Type 2 (HbA1c: 7.2%)</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
+                                <span className="text-slate-500">Hypertension</span>
+                                <span className="font-medium text-slate-800">Controlled</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm border-b border-slate-50 pb-2">
+                                <span className="text-slate-500">BMI</span>
+                                <span className="font-medium text-slate-800">28.4 (Overweight)</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-slate-500">HLA-B*5801</span>
+                                <span className="font-medium text-green-600 flex items-center gap-1">
+                                <Icons.CheckCircle className="h-3 w-3" /> Negative
+                                </span>
+                            </div>
+                            </div>
+                        </div>
+
+                        </div>
+
+                        {/* Middle Column: The AI Prediction (5 cols) */}
+                        <div className="lg:col-span-5 flex flex-col gap-6">
+                        
+                        <div className="bg-white rounded-xl shadow-md border border-blue-100 overflow-hidden relative">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+                            
+                            {/* Header for Prediction */}
+                            <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Icons.Brain className="h-5 w-5 text-indigo-600" />
+                                <h3 className="font-bold text-slate-800 text-lg">Multi-model KR Prediction</h3>
+                            </div>
+                            <p className="text-sm text-slate-500">Precision prediction of kidney responsiveness (KR) to Urate-Lowering Agents.</p>
+                            </div>
+
+                            {/* Drug Selection Tabs */}
+                            <div className="flex p-2 bg-slate-50 gap-2">
+                            {drugAnalysis.map((drug) => (
+                                <button
+                                key={drug.name}
+                                onClick={() => setSelectedDrug(drug.name.split(' ')[0])}
+                                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                    selectedDrug === drug.name.split(' ')[0]
+                                    ? 'bg-white shadow-sm border-slate-200 text-blue-700'
+                                    : 'bg-transparent border-transparent text-slate-500 hover:bg-slate-200/50'
+                                }`}
+                                >
+                                {drug.name.split(' ')[0]}
+                                </button>
+                            ))}
+                            </div>
+
+                            {/* Prediction Chart */}
+                            <div className="p-5 h-64 bg-white relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={predictionData[selectedDrug]}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="week" stroke="#94a3b8" />
+                                <YAxis yAxisId="left" domain={[4, 10]} stroke="#64748b" label={{ value: 'Predicted UA (mg/dL)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
+                                {/* Right YAxis added back */}
+                                <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" domain={[20, 50]} label={{ value: 'Predicted eGFR', angle: 90, position: 'insideRight', offset: 10, fontSize: 11 }} />
+                                <Tooltip />
+                                <Line 
+                                    yAxisId="left"
+                                    type="monotone" 
+                                    dataKey="ua" 
+                                    stroke={selectedDrug === 'Febuxostat' ? '#10b981' : selectedDrug === 'Benzbromarone' ? '#ef4444' : '#3b82f6'} 
+                                    strokeWidth={3} 
+                                    dot={{r: 4, fill: 'white', strokeWidth: 2}} 
+                                />
+                                {/* eGFR Dashed Line added back */}
+                                <Line 
+                                    yAxisId="right"
+                                    type="monotone" 
+                                    dataKey="egfr" 
+                                    stroke="#3b82f6" 
+                                    strokeWidth={2} 
+                                    strokeDasharray="5 5"
+                                    dot={false}
+                                    name="eGFR (mL/min)"
+                                />
+                                </LineChart>
+                            </ResponsiveContainer>
+                            
+                            {/* Floating Result Badge */}
+                            <div className="absolute top-4 right-4 bg-white/90 backdrop-blur border border-slate-100 shadow-sm p-3 rounded-lg">
+                                <p className="text-xs text-slate-500 uppercase font-semibold">Predicted Success Rate</p>
+                                <p className={`text-2xl font-bold ${selectedDrug === 'Febuxostat' ? 'text-green-600' : 'text-slate-700'}`}>
+                                {selectedDrug === 'Febuxostat' ? '92%' : selectedDrug === 'Allopurinol' ? '65%' : '45%'}
+                                </p>
+                            </div>
+                            </div>
+
+                            {/* Simulation Parameters */}
+                            <div className="p-4 border-t border-slate-100 grid grid-cols-2 gap-4 bg-slate-50/50">
+                            <div>
+                                <p className="text-xs text-slate-400 mb-1">Dose Simulation</p>
+                                <p className="font-semibold text-slate-700 text-sm">{selectedDrug === 'Febuxostat' ? '40mg QD' : selectedDrug === 'Allopurinol' ? '100mg QD' : '50mg QD'}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-400 mb-1">Est. Time to Target</p>
+                                <p className="font-semibold text-slate-700 text-sm">
+                                {selectedDrug === 'Febuxostat' ? '3.5 Weeks' : selectedDrug === 'Allopurinol' ? '> 12 Weeks' : 'N/A'}
+                                </p>
+                            </div>
+                            </div>
+                        </div>
+
+                        {/* Research Cohort Info */}
+                        <div className="bg-slate-100 rounded-lg p-4 border border-slate-200 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                            <div className="bg-indigo-600 text-white p-2 rounded">
+                                <Icons.FileText size={18} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">SUMS-CKD Cohort Enrollment</p>
+                                <p className="text-xs text-slate-500">Patient eligible for 2026 Pragmatic Trial.</p>
+                            </div>
+                            </div>
+                            <button className="text-xs bg-white hover:bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-md font-medium text-indigo-700 transition-colors">
+                            View Consent Form
+                            </button>
+                        </div>
+                        </div>
+
+                        {/* Right Column: Recommendations & Actions (3 cols) */}
+                        <div className="lg:col-span-3 space-y-6">
+                        
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 h-full flex flex-col">
+                            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <Icons.Beaker className="h-5 w-5 text-blue-600" />
+                            AI Recommendation
+                            </h3>
+
+                            {/* Drug List with Scores */}
+                            <div className="space-y-3 flex-1">
+                            {drugAnalysis.map((drug) => (
+                                <div 
+                                key={drug.name} 
+                                className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                                    selectedDrug === drug.name.split(' ')[0] 
+                                    ? 'border-blue-500 bg-blue-50/30' 
+                                    : 'border-transparent bg-slate-50 hover:bg-slate-100'
+                                }`}
+                                onClick={() => setSelectedDrug(drug.name.split(' ')[0])}
+                                >
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="font-bold text-sm text-slate-700">{drug.name}</span>
+                                    {drug.risk === 'Low' && <span className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 rounded font-bold">BEST</span>}
+                                </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full" style={{width: `${drug.score}%`, backgroundColor: drug.color}}></div>
+                                    </div>
+                                    <span className="text-xs font-mono font-medium text-slate-500">{drug.score}%</span>
+                                </div>
+                                <div className="flex items-start gap-1.5">
+                                    <Icons.AlertTriangle className={`w-3 h-3 mt-0.5 ${drug.risk === 'High' ? 'text-red-500' : 'text-slate-400'}`} />
+                                    <p className="text-xs text-slate-500 leading-tight">{drug.riskReason}</p>
+                                </div>
+                                </div>
+                            ))}
+                            </div>
+
+                            <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col gap-2">
+                            <button 
+                                onClick={generatePatientExplanation}
+                                className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-all text-xs"
+                            >
+                                <Icons.MessageCircle className="h-3.5 w-3.5 text-indigo-500" />
+                                Explain to Patient (AI)
+                            </button>
+                            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg shadow-sm shadow-blue-200 flex items-center justify-center gap-2 transition-all">
+                                <Icons.CheckCircle className="h-4 w-4" />
+                                Accept Suggestion
+                            </button>
+                            <p className="text-center text-[10px] text-slate-400">
+                                Logs decision to HIS & updates SUMS-CKD cohort data.
+                            </p>
+                            </div>
+                        </div>
+
+                        </div>
+                    </div>
+                    </main>
+                </div>
+
+                {/* AI Explanation Modal */}
+                {explainModalOpen && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-in fade-in zoom-in duration-200 overflow-hidden">
+                        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-4 flex justify-between items-center text-white">
+                        <div className="flex items-center gap-2">
+                            <Icons.Sparkles className="h-5 w-5" />
+                            <h3 className="font-bold">AI Patient Communication Script</h3>
+                        </div>
+                        <button onClick={() => setExplainModalOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors">
+                            <Icons.X className="h-5 w-5" />
+                        </button>
+                        </div>
+                        
+                        <div className="p-6">
+                        {explainLoading ? (
+                            <div className="flex flex-col items-center justify-center py-8 gap-3">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                            <p className="text-sm text-slate-500 animate-pulse">Generating personalized explanation via Gemini...</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                            <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 relative">
+                                <div className="absolute -top-2 left-4 bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">
+                                SCRIPT
+                                </div>
+                                <p className="text-slate-700 leading-relaxed text-sm whitespace-pre-wrap">
+                                {explainText}
+                                </p>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(explainText);
+                                    setExplainModalOpen(false);
+                                }}
+                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium transition-colors"
+                                >
+                                Copy to Clipboard
+                                </button>
+                                <button 
+                                onClick={() => setExplainModalOpen(false)}
+                                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg font-medium transition-colors"
+                                >
+                                Done
+                                </button>
+                            </div>
+                            </div>
+                        )}
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
