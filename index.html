@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<0.
+  html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -275,8 +276,8 @@
                         <Icons.Brain className="text-white h-6 w-6" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">SUMS-CKD <span className="text-blue-600">CDSS</span></h1>
-                        <p className="text-xs text-slate-500 font-medium">Smart Uric Acid Management System for CKD Care</p>
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">PURE-CKD <span className="text-blue-600">CDSS</span></h1>
+                        <p className="text-xs text-slate-500 font-medium">Precision Urate Reduction Evaluation for CKD Care</p>
                     </div>
                     <div className="hidden md:flex ml-6 gap-2">
                         <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded border border-slate-200">CMUH</span>
@@ -336,7 +337,7 @@
                         <div className="flex gap-4 w-full md:w-auto">
                         <MetricBadge label="CKD Stage" value="G4" sub="Severe" color="text-orange-600" bg="bg-orange-50" />
                         <MetricBadge label="eGFR" value="29" sub="mL/min" color="text-red-600" bg="bg-red-50" trend="down" />
-                        <MetricBadge label="Current UA" value="8.7" sub="mg/dL" color="text-red-600" bg="bg-red-50" trend="up" />
+                        <MetricBadge label="Current SUA" value="8.7" sub="mg/dL" color="text-red-600" bg="bg-red-50" trend="up" />
                         </div>
                     </div>
 
@@ -366,11 +367,11 @@
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="month" tick={{fontSize: 10}} stroke="#94a3b8" />
-                                <YAxis yAxisId="left" stroke="#ef4444" tick={{fontSize: 10}} domain={[6, 12]} label={{ value: 'UA', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                                <YAxis yAxisId="left" stroke="#ef4444" tick={{fontSize: 10}} domain={[6, 12]} label={{ value: 'SUA', angle: -90, position: 'insideLeft', fontSize: 10 }} />
                                 <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" tick={{fontSize: 10}} domain={[20, 50]} label={{ value: 'eGFR', angle: 90, position: 'insideRight', fontSize: 10 }} />
                                 <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
                                 <ReferenceLine yAxisId="right" y={30} stroke="#3b82f6" strokeDasharray="3 3" label={{ value: 'G4 Threshold', position: 'insideBottomRight', fill: '#3b82f6', fontSize: 10 }} />
-                                <Area yAxisId="left" type="monotone" dataKey="ua" stroke="#ef4444" fillOpacity={1} fill="url(#colorUa)" strokeWidth={2} name="UA (mg/dL)" />
+                                <Area yAxisId="left" type="monotone" dataKey="ua" stroke="#ef4444" fillOpacity={1} fill="url(#colorUa)" strokeWidth={2} name="SUA (mg/dL)" />
                                 <Line yAxisId="right" type="monotone" dataKey="egfr" stroke="#3b82f6" strokeWidth={2} dot={{r: 3}} name="eGFR" />
                                 </ComposedChart>
                             </ResponsiveContainer>
@@ -471,7 +472,7 @@
                                 <LineChart data={predictionData[selectedDrug]}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="week" stroke="#94a3b8" />
-                                <YAxis yAxisId="left" domain={[4, 10]} stroke="#64748b" label={{ value: 'Predicted UA (mg/dL)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
+                                <YAxis yAxisId="left" domain={[4, 10]} stroke="#64748b" label={{ value: 'Predicted SUA (mg/dL)', angle: -90, position: 'insideLeft', offset: 10, fontSize: 11 }} />
                                 {/* Right YAxis added back */}
                                 <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" domain={[20, 50]} label={{ value: 'Predicted eGFR', angle: 90, position: 'insideRight', offset: 10, fontSize: 11 }} />
                                 <Tooltip />
@@ -528,7 +529,7 @@
                                 <Icons.FileText size={18} />
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-slate-800">SUMS-CKD Cohort Enrollment</p>
+                                <p className="text-sm font-bold text-slate-800">PURE-CKD Cohort Enrollment</p>
                                 <p className="text-xs text-slate-500">Patient eligible for 2026 Pragmatic Trial.</p>
                             </div>
                             </div>
@@ -590,7 +591,7 @@
                                 Accept Suggestion
                             </button>
                             <p className="text-center text-[10px] text-slate-400">
-                                Logs decision to HIS & updates SUMS-CKD cohort data.
+                                Logs decision to HIS & updates PURE-CKD cohort data.
                             </p>
                             </div>
                         </div>
